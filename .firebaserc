@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "service-desk-482804"
-  }
+  },
+  "targets": {
+    "service-desk-482804": {
+      "hosting": {
+        "itsm-frontend": [
+          "itsm-frontend"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

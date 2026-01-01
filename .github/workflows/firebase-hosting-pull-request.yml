@@ -19,3 +19,4 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SERVICE_DESK_482804 }}
           projectId: service-desk-482804
+          target: itsm-frontend

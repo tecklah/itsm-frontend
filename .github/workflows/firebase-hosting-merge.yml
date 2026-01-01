@@ -18,3 +18,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SERVICE_DESK_482804 }}
           channelId: live
           projectId: service-desk-482804
+          target: itsm-frontend
