@@ -21,8 +21,7 @@ import {
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
-
-const LIST_SERVICE_REQUEST_URL = 'http://localhost:8000/service-request';
+import { LIST_SERVICE_REQUEST_URL } from '../common/constants';
 
 const statusColors = {
   'OPEN': 'default',

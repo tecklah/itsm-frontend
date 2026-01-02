@@ -21,8 +21,7 @@ import {
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
-
-const LIST_INCIDENT_TICKET_URL = 'http://localhost:8000/incident-ticket';
+import { LIST_INCIDENT_TICKET_URL } from '../common/constants';
 
 const statusColors = {
   'OPEN': 'default',

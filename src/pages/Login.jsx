@@ -13,8 +13,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { Visibility, VisibilityOff, Login as LoginIcon } from '@mui/icons-material';
-
-const LOGIN_URL = 'http://localhost:8000/login';
+import { LOGIN_URL } from '../common/constants';
 
 export default function Login() {
   const navigate = useNavigate();
