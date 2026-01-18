@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -12,9 +12,12 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { CREATE_SERVICE_REQUEST_URL } from '../common/constants';
+import { v4 as uuidv4 } from 'uuid';
+import { CREATE_SERVICE_REQUEST_URL, SERVICE_REQUEST_MAKE_DECISION_URL } from '../common/constants';
 
 export default function AddServiceRequest() {
   const [formData, setFormData] = useState({
@@ -22,10 +25,20 @@ export default function AddServiceRequest() {
     description: '',
     application: '',
     username: localStorage.getItem('username') || '',
+    enable_ai_assistant: true,
   });
   const [alert, setAlert] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState('');
+  const [pendingInterrupt, setPendingInterrupt] = useState(null);
+  const [initialRequestData, setInitialRequestData] = useState(null);
+
+  // Generate session_id when component mounts
+  useEffect(() => {
+    const newSessionId = uuidv4();
+    setSessionId(newSessionId);
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -33,6 +46,88 @@ export default function AddServiceRequest() {
       ...formData,
       [name]: value,
     });
+  };
+
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: checked,
+    });
+  };
+
+  const handleDecision = async (decision) => {
+    setLoading(true);
+
+    try {
+      const response = await fetch(SERVICE_REQUEST_MAKE_DECISION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'interrupt',
+          decision: decision,
+          session_id: sessionId,
+          id: initialRequestData?.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to process decision');
+      }
+
+      // Clear the pending interrupt
+      setPendingInterrupt(null);
+
+      // Extract the actual message text from nested structure
+      let messageText = null;
+      if (result.message && typeof result.message === 'object' && result.message.message) {
+        messageText = result.message.message;
+      } else if (typeof result.message === 'string') {
+        messageText = result.message;
+      }
+
+      // Show success message
+      setAlert({
+        severity: 'success',
+        message: initialRequestData?.enable_ai_assistant
+          ? 'Service request submitted and automatically processed by SmartDesk AI successfully.'
+          : 'Service request submitted successfully.',
+      });
+
+      // Store submitted data including response details
+      // Use the latest data from database returned in the response
+      setSubmittedData({
+        id: result.data.id,
+        title: result.data.title,
+        description: result.data.description,
+        application: result.data.application,
+        status: result.data.status,
+        message: messageText || 'Action processed successfully',
+      });
+
+      // Clear the initial request data
+      setInitialRequestData(null);
+
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        application: '',
+        username: localStorage.getItem('username') || '',
+        enable_ai_assistant: true,
+      });
+    } catch (error) {
+      setAlert({
+        severity: 'error',
+        message: error.message || 'Failed to process decision. Please try again.',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -55,7 +150,10 @@ export default function AddServiceRequest() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          session_id: sessionId,
+        }),
       });
 
       const result = await response.json();
@@ -64,14 +162,41 @@ export default function AddServiceRequest() {
         throw new Error(result.error || 'Failed to submit service request');
       }
 
-      // Check if message is OUT_OF_SCOPE
-      const isOutOfScope = result.message === 'OUT_OF_SCOPE';
+      // Check if response contains an interrupt
+      if (result.message && result.message.type === 'interrupt') {
+        setPendingInterrupt(result.message);
+        // Store the initial service request data for later use
+        setInitialRequestData({
+          id: result.data.id,
+          title: result.data.title,
+          description: result.data.description,
+          application: result.data.application,
+          status: result.data.status,
+          enable_ai_assistant: formData.enable_ai_assistant,
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Extract the actual message text
+      const isMessageObject = result.message && typeof result.message === 'object' && result.message.type === 'message';
+      let messageText = null;
+      if (isMessageObject) {
+        messageText = result.message.message;
+      } else if (typeof result.message === 'string') {
+        messageText = result.message;
+      }
+      
+      // Check if message contains OUT_OF_SCOPE
+      const isOutOfScope = messageText && messageText.includes('OUT_OF_SCOPE');
 
       setAlert({
         severity: 'success',
         message: isOutOfScope 
           ? 'Service request submitted successfully. Our customer support team will get back to you shortly.' 
-          : 'Service request submitted and automatically processed by SmartDesk AI successfully.',
+          : formData.enable_ai_assistant
+          ? 'Service request submitted and automatically processed by SmartDesk AI successfully.'
+          : 'Service request submitted successfully.',
       });
 
       // Store submitted data including response details
@@ -81,7 +206,7 @@ export default function AddServiceRequest() {
         description: result.data.description,
         application: result.data.application,
         status: result.data.status,
-        message: isOutOfScope ? null : result.message,
+        message: messageText,
       });
       
       setFormData({
@@ -89,6 +214,7 @@ export default function AddServiceRequest() {
         description: '',
         application: '',
         username: localStorage.getItem('username') || '',
+        enable_ai_assistant: true,
       });
     } catch (error) {
       setAlert({
@@ -281,15 +407,88 @@ export default function AddServiceRequest() {
           }}
         />
 
+        <FormControlLabel
+          control={
+            <Checkbox
+              name="enable_ai_assistant"
+              checked={formData.enable_ai_assistant}
+              onChange={handleCheckboxChange}
+              sx={{
+                color: '#fff',
+                '&.Mui-checked': {
+                  color: '#1976d2',
+                },
+              }}
+            />
+          }
+          label="Enable AI Assistant"
+          sx={{
+            color: '#fff',
+            '& .MuiFormControlLabel-label': {
+              color: '#fff',
+            },
+          }}
+        />
+
         <Button
           type="submit"
           variant="contained"
           size="large"
           sx={{ mt: 2 }}
+          disabled={loading}
         >
           Submit
         </Button>
       </Box>
+
+      {/* Interrupt Approval UI */}
+      {pendingInterrupt && (
+        <Paper
+          sx={{
+            p: 3,
+            mt: 3,
+            maxWidth: '500px',
+            backgroundColor: '#2c2c2c',
+            border: '2px solid #ff9800',
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              mb: 1,
+              color: '#ff9800',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+            }}
+          >
+            Action Requires Approval
+          </Typography>
+          <Typography variant="body1" sx={{ color: '#fff', whiteSpace: 'pre-wrap', mb: 2 }}>
+            {pendingInterrupt.args.message || pendingInterrupt.description}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            {pendingInterrupt.allowed_decisions.map((decision) => (
+              <Button
+                key={decision}
+                variant="contained"
+                onClick={() => handleDecision(decision)}
+                disabled={loading}
+                sx={{
+                  backgroundColor: decision === 'approve' ? '#4caf50 !important' : '#f44336 !important',
+                  color: '#fff !important',
+                  '&:hover': {
+                    backgroundColor: decision === 'approve' ? '#45a049 !important' : '#da190b !important',
+                  },
+                  textTransform: 'uppercase',
+                }}
+              >
+                {decision}
+              </Button>
+            ))}
+          </Box>
+        </Paper>
+      )}
 
       <Backdrop
         sx={{

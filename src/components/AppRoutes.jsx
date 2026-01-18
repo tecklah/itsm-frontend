@@ -4,7 +4,8 @@ import {
   AddIncidentTicket,
   ListServiceRequest,
   ListIncidentTicket,
-  Login
+  Login,
+  AddAgentChat
 } from "../pages/index";
 
 export default function AppRoutes() {
@@ -18,6 +19,7 @@ export default function AppRoutes() {
       <Route path="/listincidentticket" element={<ListIncidentTicket key={location.pathname + location.key} />} />
       <Route path="/addservicerequest" element={<AddServiceRequest key={location.pathname + location.key} />} />
       <Route path="/addincidentticket" element={<AddIncidentTicket key={location.pathname + location.key} />} />
+      <Route path="/agentchat" element={<AddAgentChat key={location.pathname + location.key} />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )

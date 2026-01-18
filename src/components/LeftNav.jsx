@@ -9,6 +9,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import LinkIcon from '@mui/icons-material/Link';
 import ContentPaste from '@mui/icons-material/ContentPaste';
 import Cloud from '@mui/icons-material/Cloud';
+import ChatIcon from '@mui/icons-material/Chat';
 
 const SectionHeader = ({ title }) => (
   <Box sx={{ px: 2, py: 1.5, mt: 1 }}>
@@ -59,6 +60,16 @@ export default function LeftNav() {
             <Cloud fontSize="small" sx={{ color: '#fff' }} />
           </ListItemIcon>
           <ListItemText>List All Incident Tickets</ListItemText>
+        </MenuItem>
+        
+        <Divider sx={{ backgroundColor: '#333', my: 1 }} />
+        
+        <SectionHeader title="Agent Chat" />
+        <MenuItem component={Link} to="/agentchat">
+          <ListItemIcon>
+            <ChatIcon fontSize="small" sx={{ color: '#fff' }} />
+          </ListItemIcon>
+          <ListItemText>Chat with SmartDesk AI</ListItemText>
         </MenuItem>
       </MenuList>
     </Paper>
