@@ -289,10 +289,10 @@ export default function AddAgentChat() {
                     onClick={() => handleDecision(decision)}
                     disabled={loading}
                     sx={{
-                      backgroundColor: decision === 'APPROVE' ? '#4caf50 !important' : '#f44336 !important',
+                      backgroundColor: decision.toUpperCase() === 'APPROVE' ? '#4caf50 !important' : '#f44336 !important',
                       color: '#fff !important',
                       '&:hover': {
-                        backgroundColor: decision === 'APPROVE' ? '#45a049 !important' : '#da190b !important',
+                        backgroundColor: decision.toUpperCase() === 'APPROVE' ? '#45a049 !important' : '#da190b !important',
                       },
                     }}
                   >
